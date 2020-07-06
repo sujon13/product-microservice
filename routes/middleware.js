@@ -28,8 +28,6 @@ const ratingUpdate = async (req, res, next) => {
     } catch(error) {
         res.status(500).send(error);
     }
-    product.updatedAt = Date.now();
-    req.product = product;
     
     if(req.body.rating !== undefined) {
         const productRating = product.rating;
@@ -38,13 +36,17 @@ const ratingUpdate = async (req, res, next) => {
         const avgRating = totalRatings / ratingsEntry;
         const detailsRating = productRating.detailsRating;
         detailsRating[req.body.rating - 1] += 1;
-        req.updatedRating = {
+        product.rating = {
             avgRating: avgRating,
             totalRatings: totalRatings,
             ratingsEntry: ratingsEntry,
             detailsRating: detailsRating
         };
+
     }
+
+    product.updatedAt = Date.now();
+    req.product = product;
     next();
 };
 

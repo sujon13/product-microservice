@@ -11,6 +11,8 @@ const productRoute = require('./routes/product');
 app.use('/api/v1/products', productRoute);
 const categoryRoute = require('./routes/category');
 app.use('/api/v1/categories', categoryRoute);
+const searchRoute = require('./routes/search');
+app.use('/api/v1/search', searchRoute);
 
 
 // connect db

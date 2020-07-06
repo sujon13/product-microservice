@@ -35,33 +35,23 @@ const Product = require('../models/Product');
 const { createProduct, ratingUpdate, productUpdate, search } = require('./middleware');
 
 
-router.get('/', search, async (req, res) => {
-    const searchString = req.query.search;
-    const page = req.query.page;
-    const limit = req.query.limit;
-    const options = {
-        page: req.query.page,
-        limit: req.query.limit
-    };
+router.get('/', async (req, res) => {
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    
+
     try {
         //const query = Product.aggregate([{$match: { 'details.brand': /par/i }}]);
         //const products = await Product.aggregatePaginate(req.customizedQuery, options);
         //const products = await Product.find( $or: [{ 'details.brand': /easy/i}]);
         const products = await Product.find(
-            {
-                $or: [
-                    {'details.brand': new RegExp(searchString, "i") },
-                    {'details.model': new RegExp(searchString, "i") },
-                    {'details.color': new RegExp(searchString, "i") },
-                    {'details.model': new RegExp(searchString, "i") },
-                    {'name': new RegExp(searchString, "i") },
-                    {'description': new RegExp(searchString, "i") },
-                    {'imageUrl': new RegExp(searchString, "i") }
-
-                ]
+            {},
+            'name description',
+            {  
+                skip: (page - 1) * limit,
+                limit: limit
             }
         );
-        //console.log(products);
 
         res.status(200).send(products);
     } catch(error) {

@@ -131,7 +131,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     try {
         const category = await Category.findById(req.params.id);
         if(!category)return res.sendStatus(404);
-        
+
         category.imageUrl = req.file.path;
         for(const property in body) {
             category[property] = body[property];
@@ -148,34 +148,5 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         res.sendStatus(500);
     }
 })
-
-/*
-router.put('/:id', upload.single('image'), async (req, res) => {
-    const body = req.body;
-    console.log(req.file);
-
-    try {
-        const category = await Category.findByIdAndUpdate(req.params.id, 
-            {
-                $set: {
-                    description: body.description,
-                    imageUrl: req.file.path
-                }
-            },
-            {
-                new: true
-            }
-        );
-        if(category) {
-            res.status(200).send(category);
-        } else {
-            res.sendStatus(404);
-        }
-    } catch(error) {
-        console.log(error);
-        res.sendStatus(500);
-    }
-});
-*/
 
 module.exports = router;
