@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const createError = require('http-errors');
 
 // multer
 const multer  = require('multer');
@@ -32,56 +33,24 @@ const upload = multer({
 
 
 const Category = require('../models/Category');
-const { createProduct, ratingUpdate, productUpdate, search } = require('./middleware');
+const { verifyToken } = require('./middleware');
 
-/*
-router.get('/', search, async (req, res) => {
-    const searchString = req.query.search;
-    const page = req.query.page;
-    const limit = req.query.limit;
-    const options = {
-        page: req.query.page,
-        limit: req.query.limit
-    };
-    try {
-        //const query = Product.aggregate([{$match: { 'details.brand': /par/i }}]);
-        //const products = await Product.aggregatePaginate(req.customizedQuery, options);
-        //const products = await Product.find( $or: [{ 'details.brand': /easy/i}]);
-        const products = await Product.find(
-            {
-                $or: [
-                    {'details.brand': new RegExp(searchString, "i") },
-                    {'details.model': new RegExp(searchString, "i") },
-                    {'details.color': new RegExp(searchString, "i") },
-                    {'details.model': new RegExp(searchString, "i") },
-                    {'name': new RegExp(searchString, "i") },
-                    {'description': new RegExp(searchString, "i") },
-                    {'imageUrl': new RegExp(searchString, "i") }
-
-                ]
-            }
-        );
-        //console.log(products);
-
-        res.status(200).send(products);
-    } catch(error) {
-        console.log(error);
-        res.status(404).send({error: error});
-    }
-});
-*/
-
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const categories = await Category.find();
         res.status(200).send(categories);
     } catch(error) {
-        res.send(error);
+        next(error);
     }
 })
 
-router.post('/', upload.single('image'), async (req, res) => {
-    
+// only admin
+router.post('/', verifyToken, upload.single('image'), async (req, res, next) => {
+    if(req.user.isAdmin === false) {
+        return res.status(401).send('You do not have permission to create category');
+    }
+
+
     const body = req.body;
     
     const category = new Category({
@@ -104,33 +73,46 @@ router.post('/', upload.single('image'), async (req, res) => {
         const id = savedCategory._id.toString();
         parentCategory.children_id.push(id);
         const savedParentCategory = await parentCategory.save();
-        if(!savedParentCategory)return res.sendStatus(500);    
-        
-        res.status(201).send(savedCategory);
+
+        if(!!savedParentCategory) {
+            res.status(201).send(savedCategory);
+        } else {
+            next(createError(500, 'Parent category could not be saved'));
+        }
     } catch(error) {
-        console.log(error);
-        res.sendStatus(500);
+        next(error);
     }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res, next) => {
     try {
         const category = await Category.findById(req.params.id);
-        if(!category)return sendStatus(404);
-        
-        res.status(200).send(category);
+
+        if(!!category) {
+            res.status(200).send(category);
+        } else {
+            next(createError(404, ` Category ${req.params.id} not found!`));
+        }
     } catch(error) {
-        res.send(error);
+        next(error);
     }
 });
 
-router.put('/:id', upload.single('image'), async (req, res) => {
+// only admin
+router.put('/:id', upload.single('image'), async (req, res, next) => {
+    if(req.user.isAdmin === false) {
+        return res.status(401).send('You do not have permission to update category');
+    }
+
+
     const body = req.body;
     console.log(req.file);
 
     try {
         const category = await Category.findById(req.params.id);
-        if(!category)return res.sendStatus(404);
+        if(!category) {
+            return next(createError(404, `category ${req.params.id} not found!`));
+        }
 
         category.imageUrl = req.file.path;
         for(const property in body) {
@@ -138,14 +120,13 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         }
 
         const updatedCategory = await category.save();
-        if(updatedCategory) {
+        if(!!updatedCategory) {
             res.status(200).send(updatedCategory);
         } else {
-            res.sendStatus(500);
+            next(createError(500, 'Category could not be updated'));
         }
     } catch(error) {
-        console.log(error);
-        res.sendStatus(500);
+        next(error);
     }
 })
 

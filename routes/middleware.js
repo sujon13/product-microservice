@@ -1,4 +1,6 @@
 const Product = require('../models/Product');
+const jwt = require('jsonwebtoken');
+const createError = require('http-errors');
 
 const createProduct = (req, res, next) => {
     const body = req.body;
@@ -26,7 +28,7 @@ const ratingUpdate = async (req, res, next) => {
         var product  = await Product.findById(req.params.id);
         if(!product)return res.status(404).send();
     } catch(error) {
-        res.status(500).send(error);
+        return next(createError(404, `Product ${req.params.id} not found!`));
     }
     
     if(req.body.rating !== undefined) {
@@ -50,38 +52,36 @@ const ratingUpdate = async (req, res, next) => {
     next();
 };
 
-
-const productUpdate = async (req, res, next) => {
-    const details = req.body.details;
-    if(details === undefined)next();
-
-    req.updatedDetails = {
-        "color": details.color
-    }
-    next();
-
-}
-
-const search = async (req, res, next) => {
-    const searchString = req.query.search;
-    console.log(searchString);
+const log = (req, res, next) => {
+    const logObject = {
+        path: req.originalUrl,
+        method: req.method
+    };
     
-    const query = Product.aggregate([
-        {$match: { 'name':          new RegExp(searchString, "i") }},
-        {$match: { 'imageUrl':      new RegExp(searchString, "i") }},
-        {$match: { 'description':   new RegExp(searchString, "i") }},
-        {$match: { 'details.color': new RegExp(searchString, "i") }},
-        {$match: { 'details.brand': new RegExp(searchString, "i") }},
-        {$match: { 'details.model': new RegExp(searchString, "i") }},
-    ]);
-
-    //const query = Product.aggregate(queryArray);
-    req.customizedQuery = query;
+    if(req.method === 'POST') {
+        logObject.body = req.body;
+    }
+    console.dir(logObject);
     next();
-      
 }
 
+const verifyToken = async (req, res, next) => {
+    const token = req.header('Authorization');
+    if(!token)return next(createError(401, 'Access Denied! Token is invalid'));
+
+    //verify a token symmetric
+    jwt.verify(token, process.env.TOKEN_SECRET, function(err, decoded) {
+        if(err)next(createError(401));
+        else {
+            console.log(decoded);
+            req.user = decoded;
+            next();
+        }
+    });
+
+}
+
+module.exports.verifyToken = verifyToken;
 module.exports.createProduct = createProduct;
 module.exports.ratingUpdate = ratingUpdate;
-module.exports.productUpdate = productUpdate;
-module.exports.search = search;
+module.exports.log = log;

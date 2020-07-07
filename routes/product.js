@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const createError = require('http-errors');
 
 // multer
 const multer  = require('multer');
@@ -32,14 +33,13 @@ const upload = multer({
 
 
 const Product = require('../models/Product');
-const { createProduct, ratingUpdate, productUpdate, search } = require('./middleware');
+const { createProduct, ratingUpdate, verifyToken } = require('./middleware');
 
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
     
-
     try {
         //const query = Product.aggregate([{$match: { 'details.brand': /par/i }}]);
         //const products = await Product.aggregatePaginate(req.customizedQuery, options);
@@ -55,43 +55,47 @@ router.get('/', async (req, res) => {
 
         res.status(200).send(products);
     } catch(error) {
-        console.log(error);
-        res.status(404).send({error: error});
+        next(error);
     }
 });
 
+// only admin
+router.post('/', verifyToken, createProduct, async (req, res, next) => {
+    if(req.user.isAdmin === false) {
+        return res.status(401).send('You do not have permission to create product');
+    }
 
-router.post('/', createProduct, async (req, res) => {
     const product = req.product;
 
     try {
         const savedproduct = await product.save();
-        if(!savedproduct) {
-            console.log('product could not be saved');
-            return res.status(500).send({error: 'Internal server error'});
+        if(!!savedproduct) {
+            res.status(201).send(savedproduct);
+        } else {
+            next(createError(500, 'Product could not be saved'));
         }
-        res.status(201).send(savedproduct);
     } catch(error) {
-        console.log(error);
-        res.status(500).send({error: 'Internal server error'});
+        next(error);
     }
 });
 
-router.get('/:id', async (req, res)=> {
+router.get('/:id', async (req, res, next)=> {
     console.log(req.params.id);
     try {
         const product = await Product.findById(req.params.id);
+        if(!!product) {
+            res.status(200).send(product);
+        } else {
+            next(createError(404, `Product ${req.params.id} not Found!!`));
+        }
 
-        if(!product)return res.status(404).send('Not found');
-        res.status(200).send(product);
-    } catch(eror) {
-        console.log(error);
-        res.status(500).send();
+    } catch(error) {
+       next(error);
     }
 })
 
 // update except image
-router.put('/:id', ratingUpdate, async (req, res) => {
+router.put('/:id', verifyToken, ratingUpdate, async (req, res, next) => {
     const body = req.body;
 
     try {
@@ -108,16 +112,23 @@ router.put('/:id', ratingUpdate, async (req, res) => {
         }
 
         const updatedProduct = await product.save();
-        if(!updatedProduct)return res.status(500).send();
-        res.status(200).send(updatedProduct);
-
+        if(!!updatedProduct) {
+            res.status(200).send(updatedProduct);
+        } else {
+            next(createError(500, 'Product can not be updated!'));
+        }
     } catch(error) {
-        return res.status(500).send(error);
+        next(error);
     }
 })
 
 // only image update
-router.put('/image/:id', upload.single('image'), async (req, res) => {
+// only admin
+router.put('/image/:id', verifyToken, upload.single('image'), async (req, res, next) => {
+    if(req.user.isAdmin === false) {
+        return res.status(401).send('You do not have permission to upload product image');
+    }
+
     const body = req.body;
 
     try {
@@ -130,29 +141,35 @@ router.put('/image/:id', upload.single('image'), async (req, res) => {
                 new: true
             }
         );
-        if(updatedProduct) {
+        if(!!updatedProduct) {
             res.status(200).send(updatedProduct);
         } else {
-            res.sendStatus(500);
+            next(createError(500, 'Image could not be uploaded'));
         }
     } catch(error) {
-        return res.status(500).send(error);
+        next(error);
     }
 });
 
-router.delete('/:id', async (req, res)=> {
-    console.log(req.params.id);
+// only admin
+router.delete('/:id', verifyToken, async (req, res, next)=> {
+    if(req.user.isAdmin === false) {
+        return res.status(401).send('You do not have permission to delete product');
+    }
+
     try {
         const options = {
             select: ["name"]
         };
-        const product = await Product.findByIdAndDelete(req.params.id,options);
+        const product = await Product.findByIdAndDelete(req.params.id, options);
 
-        if(!product)return res.status(404).send('Not found');
-        res.status(200).send(product);
+        if(!!product) {
+            res.status(200).send(product);
+        } else {
+            next(createError(404, `product ${req.params.id} not found!`));
+        }
     } catch(error) {
-        console.log(error);
-        res.status(500).send();
+        next(error);
     }
 });
 

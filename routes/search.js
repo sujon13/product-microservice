@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const createError = require('http-errors');
 
 const Product = require('../models/Product');
 const Category = require('../models/Category');
@@ -65,19 +66,16 @@ const matchWithCategory = async (req, res, next) => {
     let categoryList = [], filteredCategoryIdList = [];
     try {
         categoryList = await Category.find();
-        if(!categoryList)return res.sendStatus(404);
-
-        for(const category of filteredCategoryList) {
+        for(const category of categoryList) {
             let found = category.name.search(new RegExp(searchString, "i"));
             found += category.description.search(new RegExp(searchString, "i"));
             found += category.imageUrl.search(new RegExp(searchString, "i"));
             if(found > -3) {
-                categoryIdList.push(category._id.toString());
+                filteredCategoryIdList.push(category._id.toString());
             }
         }
     } catch(error) {
-        console.log(error);
-        return res.send(error);
+        next(error);
     }
     
     const dfs = new Dfs(categoryList, filteredCategoryIdList);
@@ -87,12 +85,12 @@ const matchWithCategory = async (req, res, next) => {
     next();
 }
 
-router.get('/', matchWithCategory, async (req, res) => {
+router.get('/', matchWithCategory, async (req, res, next) => {
     const searchString = req.query.search;
     
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
-    
+    console.log(req.categoryIdList);
 
     try {
         const products = await Product.find(
@@ -116,12 +114,11 @@ router.get('/', matchWithCategory, async (req, res) => {
         );
         res.status(200).send(products);
     } catch(error) {
-        console.log(error);
-        res.status(404).send({error: error});
+        next(error);
     }
 });
 
-router.get('/:categoryId', async (req, res) => {
+router.get('/:categoryId', async (req, res, next) => {
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
     const categoryId = req.params.categoryId;
@@ -130,7 +127,7 @@ router.get('/:categoryId', async (req, res) => {
     try {
         categoryList = await Category.find();
     } catch(error) {
-        return res.sendStatus(500);
+        return next(createError(500, 'Failed to get categorylist'));
     }
 
     const dfs = new Dfs(categoryList, [categoryId]);
@@ -153,8 +150,7 @@ router.get('/:categoryId', async (req, res) => {
         };
         res.status(200).send(response);
     } catch(error) {
-        console.log(error);
-        res.status(404).send({error: error});
+        next(error);
     }
 });
 
