@@ -34,7 +34,7 @@ const ProductSchema = new mongoose.Schema({
         brand: String,
         model: String,
         sex: String,
-        weight: Number,
+        weight: String,
         expiryDate: Date,
         ProductCreatedAt: Date
     },
@@ -42,6 +42,11 @@ const ProductSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: true
+    },
+    numOfProductInStock: {
+        type: Number,
+        required: false,
+        default: 1
     },
     isNewProduct: {
         type: Boolean

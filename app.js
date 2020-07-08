@@ -61,4 +61,4 @@ mongoose.connect(
     }
 )
 
-app.listen(3100, () => console.log(`product server is up and running`));
+app.listen(3100, () => console.log(`product server is up and running at port 3100`));

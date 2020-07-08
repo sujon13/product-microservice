@@ -33,7 +33,7 @@ const upload = multer({
 
 
 const Category = require('../models/Category');
-const { verifyToken } = require('./middleware');
+const { verifyAdmin } = require('./middleware');
 
 router.get('/', async (req, res, next) => {
     try {
@@ -45,12 +45,7 @@ router.get('/', async (req, res, next) => {
 })
 
 // only admin
-router.post('/', verifyToken, upload.single('image'), async (req, res, next) => {
-    if(req.user.isAdmin === false) {
-        return res.status(401).send('You do not have permission to create category');
-    }
-
-
+router.post('/', verifyAdmin, upload.single('image'), async (req, res, next) => {
     const body = req.body;
     
     const category = new Category({
@@ -99,12 +94,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // only admin
-router.put('/:id', upload.single('image'), async (req, res, next) => {
-    if(req.user.isAdmin === false) {
-        return res.status(401).send('You do not have permission to update category');
-    }
-
-
+router.put('/:id', verifyAdmin, upload.single('image'), async (req, res, next) => {
     const body = req.body;
     console.log(req.file);
 

@@ -33,7 +33,7 @@ const upload = multer({
 
 
 const Product = require('../models/Product');
-const { createProduct, ratingUpdate, verifyToken } = require('./middleware');
+const { createProduct, ratingUpdate, verifyToken, verifyAdmin } = require('./middleware');
 
 
 router.get('/', async (req, res, next) => {
@@ -46,7 +46,7 @@ router.get('/', async (req, res, next) => {
         //const products = await Product.find( $or: [{ 'details.brand': /easy/i}]);
         const products = await Product.find(
             {},
-            'name description',
+            'name description imageUrl',
             {  
                 skip: (page - 1) * limit,
                 limit: limit
@@ -60,17 +60,13 @@ router.get('/', async (req, res, next) => {
 });
 
 // only admin
-router.post('/', verifyToken, createProduct, async (req, res, next) => {
-    if(req.user.isAdmin === false) {
-        return res.status(401).send('You do not have permission to create product');
-    }
-
+router.post('/', verifyAdmin, createProduct, async (req, res, next) => {
     const product = req.product;
 
     try {
-        const savedproduct = await product.save();
-        if(!!savedproduct) {
-            res.status(201).send(savedproduct);
+        const savedProduct = await product.save();
+        if(!!savedProduct) {
+            res.status(201).send(savedProduct);
         } else {
             next(createError(500, 'Product could not be saved'));
         }
@@ -124,11 +120,7 @@ router.put('/:id', verifyToken, ratingUpdate, async (req, res, next) => {
 
 // only image update
 // only admin
-router.put('/image/:id', verifyToken, upload.single('image'), async (req, res, next) => {
-    if(req.user.isAdmin === false) {
-        return res.status(401).send('You do not have permission to upload product image');
-    }
-
+router.put('/image/:id', verifyAdmin, upload.single('image'), async (req, res, next) => {
     const body = req.body;
 
     try {
@@ -152,11 +144,7 @@ router.put('/image/:id', verifyToken, upload.single('image'), async (req, res, n
 });
 
 // only admin
-router.delete('/:id', verifyToken, async (req, res, next)=> {
-    if(req.user.isAdmin === false) {
-        return res.status(401).send('You do not have permission to delete product');
-    }
-
+router.delete('/:id', verifyAdmin, async (req, res, next)=> {
     try {
         const options = {
             select: ["name"]
