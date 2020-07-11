@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/uploads', express.static('uploads'));
 
 // custom middlewire
-const { log } = require('./routes/middleware');
+const { log } = require('./middleware');
 app.use(log);
 
 

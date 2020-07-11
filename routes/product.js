@@ -33,21 +33,20 @@ const upload = multer({
 
 
 const Product = require('../models/Product');
-const { createProduct, ratingUpdate, verifyToken, verifyAdmin } = require('./middleware');
+const { createProduct, ratingUpdate } = require('../middleware');
+const { verifyToken, verifyAdmin } = require('../verification');
+const { pageAndLimitValidation, mongoDbIdValidation } = require('../validation');
 
-
-router.get('/', async (req, res, next) => {
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
+router.get('/', pageAndLimitValidation, async (req, res, next) => {
+    const page = req.page;
+    const limit = req.limit;
     
     try {
-        //const query = Product.aggregate([{$match: { 'details.brand': /par/i }}]);
-        //const products = await Product.aggregatePaginate(req.customizedQuery, options);
-        //const products = await Product.find( $or: [{ 'details.brand': /easy/i}]);
         const products = await Product.find(
             {},
             'name description imageUrl',
             {  
+                sort: { 'rating.avgRating': -1 },
                 skip: (page - 1) * limit,
                 limit: limit
             }
@@ -75,7 +74,7 @@ router.post('/', verifyAdmin, createProduct, async (req, res, next) => {
     }
 });
 
-router.get('/:id', async (req, res, next)=> {
+router.get('/:id', mongoDbIdValidation, async (req, res, next) => {
     console.log(req.params.id);
     try {
         const product = await Product.findById(req.params.id);
@@ -91,7 +90,7 @@ router.get('/:id', async (req, res, next)=> {
 })
 
 // update except image
-router.put('/:id', verifyToken, ratingUpdate, async (req, res, next) => {
+router.put('/:id', verifyToken, mongoDbIdValidation, ratingUpdate, async (req, res, next) => {
     const body = req.body;
 
     try {
@@ -120,7 +119,7 @@ router.put('/:id', verifyToken, ratingUpdate, async (req, res, next) => {
 
 // only image update
 // only admin
-router.put('/image/:id', verifyAdmin, upload.single('image'), async (req, res, next) => {
+router.put('/:id/image', verifyAdmin, mongoDbIdValidation, upload.single('image'), async (req, res, next) => {
     const body = req.body;
 
     try {
@@ -144,7 +143,7 @@ router.put('/image/:id', verifyAdmin, upload.single('image'), async (req, res, n
 });
 
 // only admin
-router.delete('/:id', verifyAdmin, async (req, res, next)=> {
+router.delete('/:id', verifyAdmin, mongoDbIdValidation, async (req, res, next)=> {
     try {
         const options = {
             select: ["name"]

@@ -4,6 +4,7 @@ const createError = require('http-errors');
 
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const { pageAndLimitValidation, mongoDbIdValidation } = require('../validation');
 
 
 
@@ -84,11 +85,11 @@ const matchWithCategory = async (req, res, next) => {
     next();
 }
 
-router.get('/', matchWithCategory, async (req, res, next) => {
+router.get('/', pageAndLimitValidation, matchWithCategory, async (req, res, next) => {
     const searchString = req.query.search;
     
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
+    const page = req.page;
+    const limit = req.limit;
     console.log(req.categoryIdList);
 
     try {
@@ -117,10 +118,10 @@ router.get('/', matchWithCategory, async (req, res, next) => {
     }
 });
 
-router.get('/:categoryId', async (req, res, next) => {
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
-    const categoryId = req.params.categoryId;
+router.get('/:id', mongoDbIdValidation, pageAndLimitValidation, async (req, res, next) => {
+    const page = req.page;
+    const limit = req.limit;
+    const categoryId = req.params.id;
 
     let categoryList = [];
     try {

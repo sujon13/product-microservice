@@ -33,7 +33,8 @@ const upload = multer({
 
 
 const Category = require('../models/Category');
-const { verifyAdmin } = require('./middleware');
+const { verifyAdmin } = require('../verification');
+const { mongoDbIdValidation } = require('../validation');
 
 router.get('/', async (req, res, next) => {
     try {
@@ -79,7 +80,7 @@ router.post('/', verifyAdmin, upload.single('image'), async (req, res, next) => 
     }
 });
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', mongoDbIdValidation, async (req, res, next) => {
     try {
         const category = await Category.findById(req.params.id);
 
@@ -94,7 +95,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // only admin
-router.put('/:id', verifyAdmin, upload.single('image'), async (req, res, next) => {
+router.put('/:id', verifyAdmin, mongoDbIdValidation, upload.single('image'), async (req, res, next) => {
     const body = req.body;
     console.log(req.file);
 
