@@ -14,7 +14,7 @@ const createProduct = (req, res, next) => {
         isAvailable: body.isAvailable,
         isNewProduct: body.isNewProduct,
         discount: body.discount,
-        rating: body.rating,
+        rating: body.rating
     });
 
     req.product = product;
@@ -22,18 +22,17 @@ const createProduct = (req, res, next) => {
 };
 
 const ratingUpdate = async (req, res, next) => {
-
     try {
-        var product  = await Product.findById(req.params.id);
-        if(!product)return res.status(404).send();
-    } catch(error) {
+        var product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).send();
+    } catch (error) {
         return next(createError(404, `Product ${req.params.id} not found!`));
     }
-    
-    if(req.body.rating !== undefined) {
+
+    if (req.body.rating !== undefined) {
         const productRating = product.rating;
         const totalRatings = productRating.totalRatings + req.body.rating;
-        const ratingsEntry = productRating.ratingsEntry+ 1;
+        const ratingsEntry = productRating.ratingsEntry + 1;
         const avgRating = totalRatings / ratingsEntry;
         const detailsRating = productRating.detailsRating;
         detailsRating[req.body.rating - 1] += 1;
@@ -43,7 +42,6 @@ const ratingUpdate = async (req, res, next) => {
             ratingsEntry: ratingsEntry,
             detailsRating: detailsRating
         };
-
     }
 
     product.updatedAt = Date.now();
@@ -56,13 +54,13 @@ const log = (req, res, next) => {
         path: req.originalUrl,
         method: req.method
     };
-    
-    if(req.method === 'POST') {
+
+    if (req.method === 'POST') {
         logObject.body = req.body;
     }
     console.dir(logObject);
     next();
-}
+};
 
 module.exports.createProduct = createProduct;
 module.exports.ratingUpdate = ratingUpdate;

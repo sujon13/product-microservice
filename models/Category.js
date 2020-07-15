@@ -27,10 +27,10 @@ const CategorySchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }  
+    }
 });
 
-CategorySchema.index({'$**': 'text'});
+CategorySchema.index({ '$**': 'text' });
 
 //ProductSchema.plugin(mongoosePaginate);
 CategorySchema.plugin(aggregatePaginate);

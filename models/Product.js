@@ -29,7 +29,6 @@ const ProductSchema = new mongoose.Schema({
         color: String,
         size: {
             type: [String]
-
         },
         brand: String,
         model: String,
@@ -63,11 +62,11 @@ const ProductSchema = new mongoose.Schema({
         },
         ratingsEntry: {
             type: Number,
-            default:0
+            default: 0
         },
         detailsRating: {
             type: [Number],
-            default: [0,0,0,0,0]
+            default: [0, 0, 0, 0, 0]
         }
     },
     createdAt: {
@@ -77,10 +76,10 @@ const ProductSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }   
-})
+    }
+});
 
-ProductSchema.index({'$**': 'text'});
+ProductSchema.index({ '$**': 'text' });
 
 //ProductSchema.plugin(mongoosePaginate);
 ProductSchema.plugin(aggregatePaginate);
